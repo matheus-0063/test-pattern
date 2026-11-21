@@ -8,11 +8,14 @@
     "coverage": "jest --coverage"
   },
   "devDependencies": {
+    "@babel/core": "^7.23.2",
     "@babel/preset-env": "^7.23.2",
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0"
   },
   "jest": {
+    "testMatch": ["**/*.test.js"],
+    "collectCoverageFrom": ["src/services/CheckoutService.js"],
     "transform": {
       "^.+\\.js$": "babel-jest"
     }
