@@ -24,17 +24,15 @@ Seu objetivo é criar a suíte de testes para o `src/services/CheckoutService.js
 
 ## Implementação da suíte
 
-Os testes estão em `__tests__/CheckoutService.test.js` e seguem Arrange, Act, Assert
-(preparar, executar e verificar). As dependências externas são substituídas por
-dublês; nenhum teste realiza cobrança, gravação em banco ou envio real de e-mail.
+Os testes estão em `__tests__/CheckoutService.test.js`. Eles seguem a sequência
+preparar, executar e verificar (AAA), com as etapas separadas por linhas em branco.
+Pagamento, persistência e e-mail são simulados com dublês.
 
 ### Criação dos dados
 
-- **Object Mother:** `UserMother.umUsuarioPadrao()` e
-  `UserMother.umUsuarioPremium()` retornam novos usuários com dados conhecidos.
-- **Data Builder:** `CarrinhoBuilder` começa com um usuário padrão e um item de
-  R$ 100. Os métodos `comUser(user)`, `comItens(itens)` e `vazio()` personalizam o
-  carrinho de forma fluente; `build()` cria a instância final.
+O `UserMother` cria os dois perfis usados nos testes: padrão e Premium.
+O `CarrinhoBuilder` começa com um usuário padrão e um item de R$ 100. Ele permite
+trocar o usuário, definir os itens ou criar um carrinho vazio.
 
 ```js
 const carrinho = new CarrinhoBuilder()
@@ -43,60 +41,40 @@ const carrinho = new CarrinhoBuilder()
     .build();
 ```
 
-O Mother atende aos dois perfis fixos de usuário. O Builder permite combinar
-usuários e itens sem criar um método de fábrica para cada combinação.
+O Builder evita criar um método de fábrica para cada combinação de usuário e itens.
 
 ### Papéis dos dublês
 
-- **Stub:** fornece respostas predefinidas para controlar o cenário. No teste de
-  estado de pagamento recusado, apenas o resultado `null` é verificado.
-- **Dummy:** preenche uma dependência que não será utilizada. Nesse mesmo teste,
-  repository e e-mail são objetos vazios.
-- **Mock:** permite verificar interações, como o valor cobrado, o pedido enviado
-  para persistência ou os argumentos do e-mail.
+- No teste que espera `null`, o gateway é um **stub**: retorna pagamento recusado.
+  Repository e e-mail são **dummies**, pois não serão utilizados.
+- No teste do desconto, gateway e repository são **mocks**: suas chamadas são
+  verificadas para conferir o valor cobrado e o pedido salvo.
+- No teste da confirmação por e-mail, gateway e repository fornecem as respostas
+  como **stubs**. O e-mail é o **mock** cujos argumentos e número de chamadas são
+  verificados.
 
-O papel depende do uso no teste: `jest.fn().mockResolvedValue(...)` pode funcionar
-como stub ao fornecer uma resposta e como mock quando suas chamadas são
-verificadas. No teste de e-mail Premium, gateway e repository são stubs e o
-serviço de e-mail é o mock.
+Os nomes das variáveis não mudam o papel do dublê: a mesma `jest.fn()` pode fornecer
+uma resposta em um teste e ter suas chamadas verificadas em outro. Os testes
+Premium compartilham a preparação em um `beforeEach`, com novos objetos a cada teste.
 
 ### Cenários implementados
 
-1. Pagamento recusado retorna `null`.
-2. Pagamento recusado não salva pedido nem envia e-mail.
-3. Cliente padrão recebe o pedido salvo com a soma dos itens, sem desconto.
-4. Cliente Premium paga R$ 180 por R$ 200 em itens; o pedido é salvo com desconto.
-5. O e-mail Premium é enviado uma vez, com destinatário, ID e valor corretos.
-6. Falha no e-mail é registrada e não impede o retorno do pedido salvo.
-7. Erro do gateway é propagado sem persistência nem notificação.
-8. Erro de persistência é propagado sem notificação.
-9. Carrinho vazio tem total zero, conforme o comportamento atual do serviço.
-
-Os testes documentam a lógica existente. O serviço ainda aceita carrinhos vazios;
-uma eventual regra para rejeitá-los precisa ser definida antes de mudar esse fluxo.
+Os nove testes cobrem pagamento recusado, total do cliente padrão, desconto
+Premium, confirmação por e-mail e erros nas dependências. Também registram o
+comportamento atual do carrinho vazio: ele é aceito e cobrado com valor zero.
 
 ## Como executar
 
-1.  **Instale as dependências** com Node.js e npm disponíveis:
-    ```bash
-    npm ci
-    ```
-2.  **Execute todos os testes:**
-    ```bash
-    npm test
-    ```
-3.  **Execute em modo watch:**
-    ```bash
-    npm test -- --watch
-    ```
-4.  **Gere a cobertura do `CheckoutService`:**
-    ```bash
-    npm run coverage
-    ```
-    O relatório HTML fica em `coverage/lcov-report/index.html`. A cobertura é
-    limitada ao serviço que é o objeto deste trabalho, conforme `package.json`.
+Com Node.js e npm instalados:
 
-A configuração Babel permite ao Jest executar os módulos `import`/`export` do
-projeto. O Jest descobre apenas arquivos `*.test.js`, para não tratar os builders
-em `__tests__/builders/` como suítes de teste. O `package-lock.json` registra as
-versões instaladas para reproduzir o ambiente com `npm ci`.
+```bash
+npm ci
+npm test
+```
+
+Para acompanhar mudanças, use `npm test -- --watch`. Para gerar a cobertura do
+`CheckoutService`, use `npm run coverage`. O relatório HTML fica em
+`coverage/lcov-report/index.html`.
+
+O Babel permite executar `import`/`export` no Jest. Apenas arquivos `*.test.js`
+são reconhecidos como testes, para que os builders não sejam executados como suítes.

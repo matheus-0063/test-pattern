@@ -5,7 +5,7 @@ import { UserMother } from './UserMother.js';
 export class CarrinhoBuilder {
     constructor() {
         this.user = UserMother.umUsuarioPadrao();
-        this.itens = [new Item('Produto padrso', 100)];
+        this.itens = [new Item('Produto padrão', 100)];
     }
 
     comUser(user) {
